@@ -20,7 +20,7 @@ def parse_arguments():
     parser.add_argument('--epochs', type=int, default=5, 
                         help='Number of training epochs')
     parser.add_argument('--test_output_dir', type=str, 
-                        default='./result/', 
+                        default='./result_1/', 
                         help='Directory for test outputs')
     
     # Diffusion Process Configuration
@@ -84,12 +84,17 @@ def parse_arguments():
     parser.add_argument('--sigma_data', type=float, default=0.5, help='Standard deviation of data distribution for normalizing noise levels')
     parser.add_argument('--rho', type=float, default=7, help='Controls the shape of the noise schedule (higher values lead to more aggressive noise scaling)')
     parser.add_argument('--P_mean', type=float, default=-1.2, help='Mean of the prior distribution used for sampling initial noise')
-    parser.add_argument('--P_std', type=float, default=3, help='Standard deviation of the prior distribution for initial noise sampling')
+    parser.add_argument('--P_std', type=float, default=1.2, help='Standard deviation of the prior distribution for initial noise sampling')
     parser.add_argument('--S_churn', type=float, default=0, help='Probability of adding extra noise during sampling to improve diversity')
     parser.add_argument('--S_min', type=float, default=0, help='Minimum noise level where stochasticity is applied')
     parser.add_argument('--S_max', type=float, default=1000, help='Maximum noise level where stochasticity is applied')
     parser.add_argument('--S_noise', type=float, default=1, help='Scale factor for additional noise applied in stochastic sampling')
-    parser.add_argument('--sampling_method_for_train_phase', type=str, default="log-normal", help='sampling method for train phase [log-normal, log-uniform]')
+    parser.add_argument('--sampling_method_for_train_phase', type=str, default="log-uniform-importance", help='sampling method for train phase [log-normal, log-uniform, log-uniform-importance]')
+    parser.add_argument(
+    '--log_uniform_main_prob', type=float, default=0.9,
+    help='Probability of sampling from the important region (e.g., log(σ) ∈ [-2, 1]) in log-uniform-importance sampling'
+    )
+
 
     # Parse arguments
     args = parser.parse_args()
@@ -144,7 +149,7 @@ if __name__ == "__main__":
     # Testing
     if cfg.do_test:
         os.makedirs(cfg.test_output_dir, exist_ok=True)  # 디렉토리 생성
-        checkpoint = torch.load("/root/edm_AnimeDiffusion/logs/lightning_logs/version_4/checkpoints/epoch=04-train_avg_loss=0.0093.ckpt", map_location='cuda')
+        checkpoint = torch.load("/root/edm_AnimeDiffusion/logs/lightning_logs/version_5/checkpoints/epoch=00-train_avg_loss=0.0216.ckpt", map_location='cuda')
         checkpoint['state_dict'].pop('model.inference_time_steps', None)
         model.load_state_dict(checkpoint['state_dict'], strict=False)
         trainer.test(model)

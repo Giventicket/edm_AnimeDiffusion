@@ -45,6 +45,12 @@ class AnimeDiffusion(pl.LightningModule):
             S_noise=cfg.S_noise,
         )
         
+        if cfg.sampling_method_for_train_phase == "log-uniform-importance":
+            self.register_buffer("log_sigma_min", torch.log(torch.tensor(self.cfg.sigma_min)))
+            self.register_buffer("log_sigma_max", torch.log(torch.tensor(self.cfg.sigma_max)))
+            self.register_buffer("log_sigma_important_min", torch.log(10 ** torch.tensor(-2.0))) # custom to the dataset
+            self.register_buffer("log_sigma_important_max", torch.log(10 ** torch.tensor(1.0))) # custom to the dataset
+        
         if "lpips" in cfg.finetuning_loss_type:
             self.lpips_loss_fn = lpips.LPIPS(net='vgg').to(self.device) # LPIPS loss
             self.lpips_loss_fn.eval()
@@ -137,6 +143,25 @@ class AnimeDiffusion(pl.LightningModule):
             log_sigma_min = torch.log(torch.tensor(self.cfg.sigma_min, device=self.device))
             log_sigma_max = torch.log(torch.tensor(self.cfg.sigma_max, device=self.device))
             log_sigma = rnd_uniform * (log_sigma_max - log_sigma_min) + log_sigma_min
+            sigma = log_sigma.exp()
+        elif self.cfg.sampling_method_for_train_phase == "log-uniform-importance":
+            batch_size = x_ref.shape[0]
+            
+            is_main = torch.rand(batch_size, 1, 1, 1, device=self.device) < self.cfg.log_uniform_main_prob
+            u = torch.rand(batch_size, 1, 1, 1, device=self.device)
+
+            # 중요 구간
+            log_sigma_main = self.log_sigma_important_min + u * (self.log_sigma_important_max - self.log_sigma_important_min)
+
+            # 비중요 구간 (왼쪽 / 오른쪽 꼬리)
+            u_tail = torch.rand(batch_size, 1, 1, 1, device=self.device)
+            is_left = torch.rand(batch_size, 1, 1, 1, device=self.device) < 0.5
+            log_sigma_left = self.log_sigma_min + u_tail * (self.log_sigma_important_min - self.log_sigma_min)
+            log_sigma_right = self.log_sigma_important_max + u_tail * (self.log_sigma_max - self.log_sigma_important_max)
+            log_sigma_tail = torch.where(is_left, log_sigma_left, log_sigma_right)
+
+            # 최종 σ
+            log_sigma = torch.where(is_main, log_sigma_main, log_sigma_tail)
             sigma = log_sigma.exp()
         else:
             raise NotImplementedError(f"Unknown sampling method: {self.cfg.sampling_method_for_train_phase}")
