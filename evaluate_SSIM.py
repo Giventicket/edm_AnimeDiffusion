@@ -4,7 +4,7 @@ import cv2
 
 # 경로 설정
 real_dir = '/data/Anime/test_data/reference'
-generated_dir = './result'
+generated_dir = './result_same_no_weight_log_uniform_importance'
 
 # 모든 이미지의 SSIM을 저장할 리스트
 ssim_scores = []

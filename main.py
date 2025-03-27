@@ -20,7 +20,7 @@ def parse_arguments():
     parser.add_argument('--epochs', type=int, default=5, 
                         help='Number of training epochs')
     parser.add_argument('--test_output_dir', type=str, 
-                        default='./result_1/', 
+                        default='./result/', 
                         help='Directory for test outputs')
     
     # Diffusion Process Configuration
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     # Testing
     if cfg.do_test:
         os.makedirs(cfg.test_output_dir, exist_ok=True)  # 디렉토리 생성
-        checkpoint = torch.load("/root/edm_AnimeDiffusion/logs/lightning_logs/version_5/checkpoints/epoch=00-train_avg_loss=0.0216.ckpt", map_location='cuda')
+        checkpoint = torch.load("/root/edm_AnimeDiffusion/logs/lightning_logs/version_5/checkpoints/epoch=04-train_avg_loss=0.0136.ckpt", map_location='cuda')
         checkpoint['state_dict'].pop('model.inference_time_steps', None)
         model.load_state_dict(checkpoint['state_dict'], strict=False)
         trainer.test(model)

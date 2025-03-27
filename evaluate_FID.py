@@ -3,7 +3,7 @@ import torch
 
 # 이미지 폴더 경로 설정
 images_path = '/data/Anime/test_data/reference'
-generated_images_path = './result'
+generated_images_path = './result_same_no_weight_log_uniform_importance'
 
 # GPU 사용 가능 여부 확인
 device = 1
